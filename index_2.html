@@ -1,0 +1,853 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+	<title>Your Company Name</title>
+    <link rel="stylesheet" type="text/css" media="screen" href="style.css" />
+    <script src="https://code.jquery.com/jquery-1.7.2.min.js"></script>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script>
+
+
+          /*  window.addEventListener('message', function(e) {
+                var opts = e.data.opts,
+                    data = e.data.data;
+
+                return main(opts, data);
+            });
+*/
+            var array ;
+            
+            var critere = "audience";
+            
+            var liste ;
+            var iekei ;
+            var root ;
+            var svg ;
+    
+            var WIDTH = window.innerWidth-20,
+                HEIGHT = window.innerHeight-20 ;
+            
+            var defaults = {
+                margin: {top: 24, right: 20, bottom: 20, left: 20},
+                rootname: "TOP",
+                format: ",d",
+                title: "",
+                width: WIDTH*7/10,
+                height: HEIGHT
+            };
+            
+            var  liste_ordonnee;
+            var children ;
+            function main(o, data) {
+                var 
+                    opts = $.extend(true, {}, defaults, o),
+                    formatNumber = d3.format(opts.format),
+                    rname = opts.rootname,
+                    margin = opts.margin,
+                    theight = 36 + 16;
+
+                $('#chart').width(opts.width).height(opts.height);
+                var width = opts.width - margin.left - margin.right,
+                    height = opts.height - margin.top - margin.bottom - theight,
+                    transitioning;
+
+                console.log("mar "+width + "   "+height);
+                
+                var color = d3.scale.category20();
+
+                var x = d3.scale.linear()
+                .domain([0, width])
+                .range([0, width]);
+
+                var y = d3.scale.linear()
+                .domain([0, height])
+                .range([0, height]);
+
+                var treemap = d3.layout.treemap()
+                .children(function(d, depth) { return depth ? null : d._children; })
+                .sort(function(a, b) { return  a.value-b.value   })
+                .ratio(height / width * 0.5 * (1 + Math.sqrt(5)))
+                .round(false);
+
+                 svg = d3.select("#chart").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.bottom + margin.top)
+                .style("margin-left", -margin.left + "px")
+                .style("margin.right", -margin.right + "px")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .style("shape-rendering", "crispEdges");
+
+                //la liste du ranking sidebar
+                 $('#listeRanking').width(WIDTH-width-60).height(height-65 );
+             //   $('#legend').width(WIDTH-width-60).height(height/3 );
+
+                $('#audience').width(WIDTH-width-60)
+                $('#headListe').width(WIDTH-width-60)
+                
+                liste_ordonnee = d3.select("#listeRanking").append('div')
+                    .append('ul')
+                    .attr('class', 'legend') ;
+               /* legend = d3.select("#legend").append("svg")
+                    .attr("width", WIDTH-width-60)
+                    .attr("height", height/3).style("padding-top", 2 + "px")
+                    ;*/
+                
+                var grandparent = svg.append("g")
+                .attr("class", "grandparent");
+
+                grandparent.append("rect")
+                    .attr("y", -margin.top)
+                    .attr("width", width)
+                    .attr("height", margin.top);
+
+                grandparent.append("text")
+                    .attr("x", 6)
+                    .attr("y", 6 - margin.top)
+                    .attr("dy", ".75em");
+
+                if (opts.title) {
+                    $("#chart").prepend("<p class='title'>" + opts.title + "</p>");
+                }
+                if (data instanceof Array) {
+                    root = { key: rname, values: data };
+                } else {
+                    root = data;
+                }
+
+                initialize(root);
+               
+                display(root);
+
+               
+                if (window.parent !== window) {
+                    var myheight = document.documentElement.scrollHeight || document.body.scrollHeight;
+                    window.parent.postMessage({height: myheight}, '*');
+                }
+
+                function initialize(root) {
+                    root.x = root.y = 0;
+                    root.dx = width;
+                    root.dy = height;
+                    root.depth = 0;
+                }
+
+                // Aggregate the values for internal nodes. This is normally done by the
+                // treemap layout, but not here because of our custom implementation.
+                // We also take a snapshot of the original children (_children) to avoid
+                // the children being overwritten when when layout is computed.
+                function accumulate(d) {
+                 ///   console.log("accum   "+Object.keys(d));
+                    if(critere=="audience")
+                    return (d._children = d.values)
+                        ? d.value = d.values.reduce(function(p, v) { return p + accumulate(v); }, 0)
+                    : d[critere]*d["pourcentage"] 
+                    else   
+                    return (d._children = d.values)
+                        ? d.value = d.values.reduce(function(p, v) { return p + accumulate(v); }, 0)
+                    : d[critere]
+                }
+                
+                function additionne(d) {
+                    
+                    if(critere=="audience")
+                
+                        return (d._children = d.values)
+                            ? d._value = d.values.reduce(function(p, v) { return p + additionne(v); }, 0)
+                        : d[critere] 
+                    else     
+                        return (d._children = d.values)
+                            ? d._value = d.values.reduce(function(p, v) { return p + additionne(v); }, 0)
+                        : 1
+                }
+
+
+                // Compute the treemap layout recursively such that each group of siblings
+                // uses the same size (1×1) rather than the dimensions of the parent cell.
+                // This optimizes the layout for the current zoom state. Note that a wrapper
+                // object is created for the parent node for each group of siblings so that
+                // the parent’s dimensions are not discarded as we recurse. Since each group
+                // of sibling was laid out in 1×1, we must rescale to fit using absolute
+                // coordinates. This lets us use a viewport to zoom.
+                function layout(d) {
+                    if (d._children) {
+                        treemap.nodes({_children: d._children});
+                        d._children.forEach(function(c) {
+                            c.x = d.x + c.x * d.dx;
+                            c.y = d.y + c.y * d.dy;
+                            c.dx *= d.dx;
+                            c.dy *= d.dy;
+                            c.parent = d;
+                            layout(c);
+                        });
+                    }
+                }
+
+                function scaleRect(d,object,scale){
+                    var h = y(d.y + d.dy) - y(d.y);
+                    var w = x(d.x + d.dx) - y(d.x) ;
+
+                    var selection = d3.select(object);
+                    var offsetX = parseFloat(x(d.x))+ parseFloat(d.dx/2.0);
+                    var offsetY = parseFloat(y(d.y))+ parseFloat(d.dy/2.0);
+
+                    selection.transition()
+                        .duration(500).attr({
+                        transform:"translate("+offsetX+ ","+offsetY+") "+
+                        "scale("+scale+") "+
+                        "translate(-"+offsetX+",-"+offsetY+ ")"
+                    });
+                }
+                
+               
+                
+                function display(root) {
+               
+                  //  console.log("looooooooooooooo "+root._children[0]._children[0].key);
+                    accumulate(root);
+                    additionne(root);
+                    layout(root);
+                    console.log(root);
+                    
+                    grandparent
+                        .datum(root.parent)
+                        .on("click", transition)
+                        .select("text")
+                        .text(name(root));
+
+                    var g1 = svg.append("g", ".grandparent")
+                    .datum(root)
+                    .attr("class", "depth");
+
+                  //  liste_ordonnee.remove();
+                  
+                    var g = g1.selectAll("g")
+                    .data(root._children)
+                    .enter().append("g");
+
+                    g.filter(function(d) { 
+                  //      console.log("looooooooooooooo "+d._children[0]._children);
+                         
+                        if(typeof d._children[0]._children !=  "undefined")
+                            return d._children; 
+                        else 
+                            return d ; 
+                    })
+                     //   .classed("children", function(d){return typeof d._children[0]._children !=  "undefined" ;})
+                        .classed("children", function(d){return typeof d._children[0]._children !=  "undefined" ;})
+                        .on("click", transition);
+
+                     children = g.selectAll(".child")
+                    .data(function(d) { return d._children || [d]; })
+                    .enter().append("g").on('mouseover',MouseOverMap)
+                    .on('mouseout',mouseOutMap );
+
+                    children.append("rect")
+                        .attr("class", "child")
+                        .call(rect)
+                        .append("title")
+                        .text(function(d) {
+                        if(critere=="audience")
+                            return d.parent.key +"   :   "+ d.key + " (" + d3.format(".0f")(d.value) + ")";
+                        else  return d.parent.key +"   :   "+ d.key + " (" + d3.format(".0f")(d._value) + ")";
+                    
+                    }).style("fill-opacity","1");
+                    children.append("text")
+                        .attr("class", "ctext")
+                        .attr("font-size","x-small")
+                        .text(function(d) { return d.key; })
+                        .call(text2);
+
+                    g.append("rect")
+                        .attr("class", "parent")
+                        .call(rect).style("stroke-width",function(d){
+                        
+                     //   console.log("drawn   " + d._children[0]._children )
+                            return typeof d._children[0]._children !=  "undefined" ? 0 : 1 });
+
+                    d3.select('#audience').on('click', function () {
+                        if(critere!="audience"){
+                            critere =  'audience' ;
+                            d3.select('#audience').text("Audience") ;
+                        }else{
+                            d3.select('#audience').text("Nombre Medias"); 
+                            critere = 'pourcentage' ; 
+                        }
+                        
+                        var racine =root;
+
+                        if(typeof root.parent !="undefined"){
+                            racine = root.parent ;
+
+                            if(typeof racine.parent !="undefined"){
+                                racine = racine.parent ; 
+                            }
+                        }
+
+                        accumulate(racine);
+                        additionne(racine);
+                        
+                        children.selectAll("g").on('mouseover',MouseOverMap)
+                            .on('mouseout',mouseOutMap )
+                        
+                              console.log(root.key+"++ "+root._children[0].key+"  -  "+root._children[0].value);
+                        
+                        
+                       
+                        
+                       
+
+                            console.log(root.key+"++ "+root._children[0].key+"  -  "+root._children[0].value);
+                            //children.sort(function(b,b){return a.value-b.value})
+                         //   layout(racine);
+                        layout(root);
+                        
+                        children.selectAll("rect").attr("class","nothing")
+                        children.selectAll(".children").attr("class","nothing")
+                        
+
+                        g.selectAll("rect").call(rect)
+                        children.selectAll("rect").call(rect);
+                        
+
+                       
+                        g.selectAll(".ptext").call(text)
+                        g.selectAll(".ctext").call(text2).text(function(d) { return d.key; })
+                      
+                        
+                        children.selectAll("rect").attr("class","child")
+                        children.selectAll(".children").attr("class","children");
+                     
+                        
+                        grandparent.select("text").text(name(root));
+                        g.selectAll("tspan").text(updateName)
+                        
+                        liste_ordonnee.selectAll('li')
+                            .data(root._children).enter()
+                        
+                        liste_ordonnee.selectAll('li')
+                            .call(listeStyle)
+                    }) ;
+                    
+                    var t = g.append("text")
+                    .attr("class", "ptext")
+                    .attr("display","inline")
+                    .attr("font-size","small")
+                    .attr("dy", ".75em").call(text)
+                    
+                    
+                    t.append("tspan")
+                      //  .attr("dx", function(d){console.log("dx   "+d.key); return  d.key.length ;})
+                        .text(updateName);
+
+                    t.call(text);
+
+                    g.selectAll("rect")
+                        .style("fill", function(d) {
+
+                        //  console.log("dqsdksqpldksqlmkdsq "+  d.parent.parent );
+                        if(typeof d.parent.parent !=  "undefined")
+                        return color(d.parent.key); })
+                       
+                    function transition(d) {
+                        if (transitioning || !d) return;
+                        transitioning = true;
+                       
+                        if(typeof d.parent ==  "undefined")
+                            d3.select("#headListe").text("Répartition par type de médias");
+                        else if (typeof d._children[0]._children[0]._children ==  "undefined")
+                            d3.select("#headListe").text("Les propriétées de "+d.key);
+                        else  d3.select("#headListe").text("Les propriétaires des médias");
+                        
+                        var g2 = display(d),
+                            t1 = g1.transition().duration(400),
+                            t2 = g2.transition().duration(400);
+
+                            // Update the domain only after entering new elements.
+                        x.domain([d.x, d.x + d.dx]);
+                        y.domain([d.y, d.y + d.dy]);
+                       
+                        // Enable anti-aliasing during the transition.
+                        svg.style("shape-rendering", null);
+
+                        // Draw child nodes on top of parent nodes.
+                        svg.selectAll(".depth").sort(function(a, b) {return a.value-b.value; });     
+                        svg.selectAll(".depth").style("fill",null) ; 
+                        // Fade-in entering text.
+                        g2.selectAll("text").style("fill-opacity", 0);
+
+                        // Transition to the new view.
+                        t1.selectAll(".ptext").call(text).style("fill-opacity", 0);
+                        t1.selectAll(".ctext").call(text2).style("fill-opacity", 0);
+                        t2.selectAll(".ptext").call(text).style("fill-opacity", 1);
+                        t2.selectAll(".ctext").call(text2).style("fill-opacity", 1);
+                        t1.selectAll("rect").call(rect);
+                        t2.selectAll("rect").call(rect);
+                               
+                        // Remove the old node when the transition is finished.
+                        t1.remove().each("end", function() {
+                            svg.style("shape-rendering", "crispEdges");
+                            transitioning = false;
+                        });
+                    }
+
+                    d3.selectAll("li").remove();
+
+                 
+                    /* traitement de la liste ordonnée */ 
+                    
+                   /* liste_ordonnee.selectAll("li").data(root._children).enter().append("li")
+                        .text(function(d,i){
+                        return critere == "audience" ?  d.key+" :  "+d3.format(".0f")(d.value) : d.key+" :  "+d._value+" ~ "
+                            + d3.format(".2f")(100*d.value/d._value) +"%" })
+                        .sort(function(a, b) {return b.value-a.value; });
+*/
+                    liste_ordonnee.selectAll('ul')
+                        .data(root._children)
+                        .enter().append('li').call(listeStyle)
+                        ;
+                    
+                    function updateName(d) {
+                        var rate ="" ;
+                        //   liste=d._children[0] ;
+
+                        if(d._children[0]._children==null){
+                            if(critere=="audience")
+                            {
+                                var valeur = (d.value/d._value)*100 ;
+                                rate = " détient   (" + d3.format(".2f")(valeur) + "%)" ; 
+                            }
+                            else                           
+                                rate = " détient  (" + d3.format(".2f")(100*d.value) + "%)" ; 
+
+                        }
+                        // console.log("children   "+ d.key+"  "+rate);
+
+
+                        if(critere=="audience")
+                            return d.key + " :   "+d3.format(".0f")(d.value) + rate ; 
+                        else 
+                            if(d._children[0]._children==null)
+                                return d.key + " :   "+rate ;
+                        else 
+                            return d.key + " :   "+d3.format(".0f")(d._value)  ;
+                    }
+                   
+                    function listeStyle(d){
+                        d.style('background', '#fff')
+                            .sort(function(a, b) {
+                                return  a.value-b.value; })
+                            .text(function(d,i) { 
+                            if(d._children[0]._children==null){
+                                var valeur = (d.value/d._value)*100 ;
+                                
+                            return critere == "audience" ?  d.parent._children.length-i+". "+d.key+" :  "+d3.format(".0f")(d.value)+" ~ "
+                                + d3.format(".2f")(valeur) +"%" :       
+                            
+                            d.parent._children.length-i+". "+d.key+" :  "+d._value+" ~ "
+                                + d3.format(".2f")(100*d.value) +"%"   
+                        }else{
+                            return critere == "audience" ?  d.parent._children.length-i+". "+d.key+" :  "+d3.format(".0f")(d.value)+" ~ "
+                                + d3.format(".2f")(100*d.value/d.parent.value) +"%" :       
+
+                            d.parent._children.length-i+". "+d.key+" :  "+d._value+" ~ "
+                                + d3.format(".2f")(100*d.value/d.parent.value) +"%"   }
+                    
+                        }
+                                 )
+                        
+
+                        /*     .on('mouseover', onMouseover)
+
+                        .on('mouseout', onMouseout)
+*/
+                            .append('svg')
+                            .attr('width', 10)
+                            .attr('height', 10)
+                            .style('float', 'right')
+                            .style('margin-top', 4)
+                            .append('circle')
+                            .attr("r", 5)
+                            .attr('cx', 5)
+                            .attr('cy', 5)
+                            .style('fill', function(d, i) {
+                            if(typeof d._children[0]._children !=  "undefined")
+                                return color(d.key); 
+                            else 
+                                return color(d.parent.key) ; 
+                        })
+                    }
+                    function mouseOutMap(d,j,i) {
+
+                        liste = children ;
+                        
+                            d3.selectAll("rect").style("stroke-opacity",1);
+
+                        
+                        for(var k =0 ; k< liste.length ; k ++){
+                            var child  = liste[k];
+
+                            for(var z =0 ; z< child.length ; z ++){
+                                var tmp = child[z] ;
+
+                                d3.select(child[z]).selectAll("rect").style("fill-opacity","0.8");
+                                d3.select(child[z]).selectAll("text").style("fill-opacity","1");
+                              d3.select(child[z]).selectAll("rect").style("stroke",null);
+                                d3.select(child[z]).selectAll("rect").style("stroke-opacity",1);
+                             
+                                d3.select(child[z]).selectAll("text").style("font-weight","normal") ;
+                                if(child[z].__data__.key==d.key) {
+                                    d3.select(child[z]).selectAll("rect").style("fill",function(d) {
+
+
+                                        if(typeof d.parent.parent !=  "undefined")
+                                            return color(d.parent.key); });
+                                    d3.select(child[z]).selectAll("rect").style("color","#000");
+
+                                    scaleRect(child[z].__data__,child[z],"1");
+
+                                }
+                            }
+
+                        }
+                    }
+                    function MouseOverMap(d,j,i)  {
+                    
+                       // liste = root._children ; 
+                        liste = children ; 
+                        console.log("key    "+d.key);
+
+                      //  d3.selectAll("rect").style("stroke-opacity",0);
+
+                        for(var k =0 ; k< liste.length ; k ++){
+                            var child  = liste[k];
+
+                            for(var z =0 ; z< child.length ; z ++){
+
+                                var tmp = child[z] ;
+
+                                // console.log("accum xx  "+children[k][z]);
+
+                                if(child[z].__data__.key==d.key)
+                                {
+                                    console.log("k="+k+"  z="+z+" child[z]= "+child[z].key+"  === "+children[k][z].__data__.key)
+
+                                    scaleRect(child[z].__data__,child[z],"1.02");
+                                   
+                                    d3.select(child[z]).selectAll("rect").style("fill-opacity","1");
+                                    d3.select(child[z]).selectAll("rect").style("stroke","#000");
+                                    d3.select(child[z]).selectAll("rect").style("stroke-opacity",1);
+                                    d3.select(child[z]).selectAll("text").style("font-weight","bolder") ;
+                                    d3.select(child[z]).selectAll("text").call(text2) ;
+
+                                    //  d3.select(children[k][z]).selectAll("rect").style("fill","#000");
+                                    //  d3.select(children[k][z]).selectAll("rect").style("color","#fff");
+                                    d3.select(child[z]).selectAll("text").style("fill-opacity","1");
+                                }else{
+                                   d3.select(child[z]).selectAll("rect").style("stroke",null);
+                                    d3.select(child[z]).selectAll("rect").style("stroke-opacity",0);
+                                    d3.select(child[z]).selectAll("rect").style("fill-opacity","0.3");
+                                    d3.select(child[z]).selectAll("text").style("fill-opacity","0.2");
+
+
+
+                                }
+                            }
+
+                        }
+                    }
+                    return g;
+                }
+
+                function listeTransition(text){
+                    console.log("text     "+text);
+                }
+                
+                function text(text) {
+                 /*   text.selectAll("tspan")
+                        .attr("x", function(d) { return x(d.x) + 6; })
+                  */  
+                    text.style("opacity",0);
+                    text.transition()
+                        .duration(600).attr("transform", function(d) {
+                        return "translate(" + (x(d.x)+6) + "," + (y(d.y)+5) + ")"; })/*.attr("x", function(d) { return x(d.x) + 6; })
+                        .attr("y", function(d) { return y(d.y) + 6; })
+                        */.style("opacity", function(d) { 
+                            return (this.getComputedTextLength() < x(d.x + d.dx) - x(d.x)) && 
+                        
+                                parseInt(window.getComputedStyle(this).fontSize, 0) < y(d.y + d.dy) - y(d.y) ? 1 : 0; });
+                }
+
+                function text2(text) {
+                    text.transition()
+                        .duration(600).attr("x", function(d) { return x(d.x + d.dx) - this.getComputedTextLength() - 6; })
+                        .attr("y", function(d) { return y(d.y + d.dy) - 2; })
+                        .style("opacity", function(d) { return this.getComputedTextLength() < x(d.x + d.dx) - x(d.x) && 
+
+                                parseInt(window.getComputedStyle(this).fontSize, 0) < y(d.y + d.dy) - y(d.y) ? 1 : 0; });
+                }       
+
+                function rect(rect) {
+                  
+                    rect.transition()
+                        .duration(600).attr("transform", function(d) {
+                     //   console.log(d.key+"keys  "+d.x)
+                    return "translate(" + x(d.x) + "," + y(d.y) + ")"; })
+                       // .attr("x", function(d) { return x(d.x); })
+                      //  .attr("y", function(d) { return y(d.y); })
+                        .attr("width", function(d) { return x(d.x + d.dx) - x(d.x); })
+                        .attr("height", function(d) { return y(d.y + d.dy) - y(d.y); })
+                    ;
+                }
+
+                function name(d) {
+                   
+                    if(critere=="audience")
+                        return d.parent
+                        ? name(d.parent) + " / " + d.key + " (" +  d3.format(".0f")(d.value) + ")"
+                    : d.key + " (" +  d3.format(".0f")(d.value) + ")";
+                    
+                    else 
+                        return d.parent
+                            ? name(d.parent) + " / " + d.key + " (" +  d3.format(".0f")(d._value) + ")"
+                        : d.key + " (" +  d3.format(".0f")(d._value) + ")";
+                }
+            }
+            
+          
+
+            if (window.location.hash === "") {
+                d3.json("file1.json", function(err, res) {
+                    if (!err) {
+                     //   console.log(res.children);
+                        var data = d3.nest().key(function(d) { return d.type; }).key(function(d) {return d.proprietaire; }).key(function(d) {return d.nomJournal; }).entries(res.children);
+                        main({title: "Influenceurs des médias"}, {key: "Médias", values: data});
+                        
+                   
+                    }
+                });
+            }
+            </script>
+</head>
+<body>
+
+<div id="container">
+	<div id="intro">
+		<div id="pageHeader"><br>
+			<br>
+			<br>
+			<h1>Qui poss&egrave;de les m&eacute;dias en France ?</h1>
+					<h2>Ranking de propi	&egrave;taires</h4>
+					<br/>
+					<br/>
+					
+					<h4>Iheb CHORFI et Jos&eacute; Francisco SARAY VILLAMIZAR</h4>
+		</div>
+		<div id="preamble">
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<h3><span>Introduction and Motivation</span></h3>
+			<br>
+			<br>
+			<p class="p1"><span>Even with the raise of Internet and Social Media, conventional mass media still influences people over TV, press and Radio, and they are yet one of the hidden rulers of a nation. </span>
+		<br>
+			<br>
+			<span>
+			Their influence is achieved on different ways : first of all and the most important, they impose a reality over people, as they are the ones who choose which information must be broadcasted, and which information must be banned, second, they have the power to choose words and sentences to their convenience to tell a story according to their interests and provoke emotions on the spectator. 
+
+			On the other hand, mass media are not kindness  and selfless actors looking always for the general interest. Sometimes they follow the stakeholders, owners and the ruling political party interests, even spreading rumors if necessary. They usually go against their initial mission : telling what is really happening. 
+			</span>
+			<br>
+			<br>
+			<span>
+			By all these reasons, we are motivated to present you a ranking of who are the owners of Mass media in France. So that you can be informed of who is behind the news and information you receive in your daily live, and this can become part of your internal thoughts at any time
+			you watch the news.
+			</span>
+			</p>
+
+		</div>
+	</div>
+
+	<div id="supportingText">
+		<div id="explanation">
+		<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+			<br>
+
+			<h3><span>Public Concerned</span></h3>
+
+			<p class="p1"><span>The next data visualisation tools are targeted to french citizens that receive information through conventional mass-media and are curious about knowing which are the people/economic groups that are influencing more citizens through the mass media.</span></p>
+		</div>
+
+		<div id="participation">
+			<h3>
+
+			<span>Sources and Data Description</span></h3>
+			<p class="p1"><span>
+			Data visualized in this page comes from two sources : </span>
+			<br>
+			<br>
+			<ul>
+				<li>ACPM</li>
+				<li>M&eacute;diam&eacute;trie</li>
+				
+			</ul>
+			<br>
+			<br>
+			<br>
+			<p class="p1"><span>They are independent organizations capable of ensuring the veracity of the information.
+			However, every one of them has its own politics, so the presented data for TV, radio and Press belongs to different time windows that are described in the following table :
+			</span></p>
+			<br>
+			<center>
+			<table border=1>
+				<th>Media Type</th>
+				<th>File</th>
+				<th>Source</th>
+				<th>Time Window</th>
+				<th>Measure</th>
+				<tr>
+					<td>TV</td>
+					<td><a href="docs/Médiamat Hebdo_s51_2016.pdf">Médiamat%20Hebdo_s51_2016.pdf</td>
+					<td>www.mediametrie.fr</td>
+					<td>Decembre 19  25 2016</td>
+					<td>AJV (1)</td>
+				</tr>
+				<tr>
+					<td>Radio</td>
+					<td><a href="docs/CP 126 000 Septembre-Octobre 2016.pdf">CP 126 000 Septembre-Octobre 2016.pdf</a></td>
+					<td>www.mediametrie.fr</td>
+					<td>September  October 2016</td>
+					<td>AC (2)</td>
+				</tr>
+				<tr>
+					<td>Monthly Press</td>
+					<td>
+						<a href="docs/OJD_list_presse_magazine_20161227.csv">OJD_list_presse_magazine_20161227.csv</a>
+					</td>
+					<td>www.acpm.fr</td>
+					<td>2015-2016</td>
+					<td>Number of units sold</td>
+				</tr>
+				<tr>
+					<td>Weekly Press</td>
+					<td>
+						<a href="docs/OJD_list_presse_magazine_20161227.csv">
+							OJD_list_presse_magazine_20161227.csv
+						</a>
+					</td>
+					<td>www.acpm.fr</td>
+					<td>2015-2016</td>
+					<td>Number of units sold</td>
+				</tr>
+				<tr>
+					<td>Regional Press</td>
+					<td>
+						<a href="docs/OJD_list_presse_magazine_20161227.csv">
+							OJD_list_presse_magazine_20161227.csv
+						</a>
+					</td>
+					<td>www.acpm.fr</td>
+					<td>2015-2016</td>
+					<td>Number of units sold</td>
+				</tr>
+				<tr>
+					<td>Mixed</td>
+					<td><a href="docs/Base médias.xlsx">Base médias.xlsx</a></td>
+					<td>http://www.monde-diplomatique.fr/</td>
+					<td>2012-2016</td>
+					<td>Percentage of property</td>
+				</tr>
+				<tr>
+					<td>Daily Press</td>
+					<td>
+						<a href="docs/OJD_list_presse_quotidienne_nationale_20161227.csv">OJD_list_presse_quotidienne_nationale_20161227.csv</a>
+					</td>
+					<td>www.acpm.fr</td>
+					<td>2015-2016</td>
+					<td>Number of units sold</td>
+				</tr>
+			</table>
+			<br>
+			<br>
+			<p>1. AJV  time percentage that anybody perceive a given chain.</p>
+
+			<p>2. AM (cumulative audience) set of people listening at least once in the day (5h-24h),( percentage of population).</p>
+			</center>
+			</span>
+
+			</p>
+		</div>
+
+		<div id="participation">
+			<h3><span>Technical Choices</span></h3>
+			<p class="p1">
+			<span>
+				We have used different techniques in order to produce the final results shown here. 
+				First of all, we have centralized different excel DataSets in one Excel sheet extracting and filtering only the useful information. Then we used Java programming language to transform this excel sheet in a Json Object to be parsed by D3 javascript framework, we have choosen this JavaScript framework thanks to its versatility and esthetically appealing results.
+			</span></p>
+		</div>
+
+
+        <div id="participation">
+            <h3><a href="sansrepartion.html">First Graph: (Media Classification)</a></h3> 
+            <iframe style="width:100% ; height: 400px; border: none" src="sansrepartion.html"></iframe>
+            <h3><a href="sansrepartion.html">Second Graph: (Owner Classification)</a></h3>
+        </div>
+        
+        
+            
+
+        
+		<div id="benefits">
+			<h3><span>Innovation</span></h3>
+			<p class="p1"><span>We decide to present the information as a Treemap, as this is a natural way to present and compare proportions. We enriched the treemap with ranking deduction, clicking effects and treemap navigation to zoom in the details of the properties of a person or economic group.</span></p>
+		</div>
+
+		<div id="benefits">
+			<h3><span>Future Work</span></h3>
+			<p class="p1"><span>The presented visualisation tools, can be improved by adding the missing information that we did not found,  and by normalizing the data to one only time window.</span></p>
+		</div>
+	</div>
+
+	
+	<div id="linkList">
+		<div id="linkList2">
+			<div id="lselect">
+				<ul>
+					<li><a href="">Home</a></li>
+					<li><a href="">Introduction</a></li>
+					<li><a href="">Motivation</a></li>
+					<li><a href="">Public Concerned</a></li>
+					<li><a href="">Technical Choices / Conception</a></li>
+					<li><a href="">Innovation</a></li>
+					<li><a href="">Future Work</a></li>
+					<li><a href="">Data Description</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
