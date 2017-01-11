@@ -165,7 +165,7 @@
             }
             
             *{
-                font-family: "30px Open Sans"
+                font-family:monospace
             }
             
             
@@ -186,15 +186,15 @@
 
 
 
-                <div id="headListe">Répartition par type de médias</div>
+                <div id="headListe">Les propriétaires des médias</div>
             <div id="listeRanking">
           
             </div>
         
             </div>
         </div>
-        <script src="https://code.jquery.com/jquery-1.7.2.min.js"></script>
-        <script src="https://d3js.org/d3.v3.min.js"></script>
+        <script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+        <script src="http://d3js.org/d3.v3.min.js"></script>
         <script>
 
 
@@ -310,6 +310,8 @@
                 display(root);
 
                
+                
+                
                 if (window.parent !== window) {
                     var myheight = document.documentElement.scrollHeight || document.body.scrollHeight;
                     window.parent.postMessage({height: myheight}, '*');
@@ -464,28 +466,12 @@
                             critere = 'pourcentage' ; 
                         }
                         
-                        var racine =root;
-
-                        if(typeof root.parent !="undefined"){
-                            racine = root.parent ;
-
-                            if(typeof racine.parent !="undefined"){
-                                racine = racine.parent ; 
-                            }
-                        }
-
-                        accumulate(racine);
-                        additionne(racine);
-                        
-                        children.selectAll("g").on('mouseover',MouseOverMap)
+                        children.data(function(d) { return d._children || [d]; }).selectAll("g").on('mouseover',MouseOverMap)
                             .on('mouseout',mouseOutMap )
-                        
                               console.log(root.key+"++ "+root._children[0].key+"  -  "+root._children[0].value);
-                        
-                        
-                       
-                        
-                       
+
+                        accumulate(root);
+                        additionne(root);
 
                             console.log(root.key+"++ "+root._children[0].key+"  -  "+root._children[0].value);
                             //children.sort(function(b,b){return a.value-b.value})
@@ -543,9 +529,7 @@
                         if (transitioning || !d) return;
                         transitioning = true;
                        
-                        if(typeof d.parent ==  "undefined")
-                            d3.select("#headListe").text("Répartition par type de médias");
-                        else if (typeof d._children[0]._children[0]._children ==  "undefined")
+                        if (typeof d._children[0]._children[0]._children ==  "undefined")
                             d3.select("#headListe").text("Les propriétées de "+d.key);
                         else  d3.select("#headListe").text("Les propriétaires des médias");
                         
@@ -605,10 +589,10 @@
                             if(critere=="audience")
                             {
                                 var valeur = (d.value/d._value)*100 ;
-                                rate = " détient   (" + d3.format(".2f")(valeur) + "%)" ; 
+                                rate = "   (" + d3.format(".2f")(valeur) + "%)" ; 
                             }
                             else                           
-                                rate = " détient  (" + d3.format(".2f")(100*d.value) + "%)" ; 
+                                rate = "   (" + d3.format(".2f")(100*d.value) + "%)" ; 
 
                         }
                         // console.log("children   "+ d.key+"  "+rate);
@@ -620,7 +604,7 @@
                             if(d._children[0]._children==null)
                                 return d.key + " :   "+rate ;
                         else 
-                            return d.key + " :   "+d3.format(".0f")(d._value)  ;
+                            return d.key + " :   "+d3.format(".0f")(d._value) +rate ;
                     }
                    
                     function listeStyle(d){
@@ -628,22 +612,10 @@
                             .sort(function(a, b) {
                                 return  a.value-b.value; })
                             .text(function(d,i) { 
-                            if(d._children[0]._children==null){
-                                var valeur = (d.value/d._value)*100 ;
-                                
-                            return critere == "audience" ?  d.parent._children.length-i+". "+d.key+" :  "+d3.format(".0f")(d.value)+" ~ "
-                                + d3.format(".2f")(valeur) +"%" :       
-                            
+                                return critere == "audience" ?  d.parent._children.length-i+". "+d.key+" :  "+d3.format(".0f")(d.value) :       
                             d.parent._children.length-i+". "+d.key+" :  "+d._value+" ~ "
-                                + d3.format(".2f")(100*d.value) +"%"   
-                        }else{
-                            return critere == "audience" ?  d.parent._children.length-i+". "+d.key+" :  "+d3.format(".0f")(d.value)+" ~ "
-                                + d3.format(".2f")(100*d.value/d.parent.value) +"%" :       
+                                + d3.format(".2f")(100*d.value/d._value) +"%" }
 
-                            d.parent._children.length-i+". "+d.key+" :  "+d._value+" ~ "
-                                + d3.format(".2f")(100*d.value/d.parent.value) +"%"   }
-                    
-                        }
                                  )
                         
 
@@ -722,7 +694,7 @@
                                 {
                                     console.log("k="+k+"  z="+z+" child[z]= "+child[z].key+"  === "+children[k][z].__data__.key)
 
-                                    scaleRect(child[z].__data__,child[z],"1.02");
+                                    scaleRect(child[z].__data__,child[z],"1.05");
                                    
                                     d3.select(child[z]).selectAll("rect").style("fill-opacity","1");
                                     d3.select(child[z]).selectAll("rect").style("stroke","#000");
@@ -810,7 +782,7 @@
                 d3.json("file1.json", function(err, res) {
                     if (!err) {
                      //   console.log(res.children);
-                        var data = d3.nest().key(function(d) { return d.type; }).key(function(d) {return d.proprietaire; }).key(function(d) {return d.nomJournal; }).entries(res.children);
+                        var data = d3.nest().key(function(d) {return d.proprietaire; }).key(function(d) {return d.nomJournal; }).entries(res.children);
                         main({title: "Influenceurs des médias"}, {key: "Médias", values: data});
                         
                    
