@@ -188,10 +188,7 @@
             <div id="sidebar">
                 <button type="checkbox" id="audience" checked >Audience </button>
 
-
-
-
-                <div id="headListe">Répartition par type de médias</div>
+                <div id="headListe">Les propriétaires des médias</div>
             <div id="listeRanking">
           
             </div>
@@ -484,17 +481,7 @@
                         
                         children.selectAll("g").on('mouseover',MouseOverMap)
                             .on('mouseout',mouseOutMap )
-                        
-                              console.log(root.key+"++ "+root._children[0].key+"  -  "+root._children[0].value);
-                        
-                        
-                       
-                        
-                       
 
-                            console.log(root.key+"++ "+root._children[0].key+"  -  "+root._children[0].value);
-                            //children.sort(function(b,b){return a.value-b.value})
-                         //   layout(racine);
                         layout(root);
                         
                         children.selectAll("rect").attr("class","nothing")
@@ -505,17 +492,19 @@
                         children.selectAll("rect").call(rect);
                         
 
-                       
+                        g.selectAll("tspan").text(updateName)
+                        children.selectAll("rect").attr("class","child")
+                        children.selectAll(".children").attr("class","children");
+                        
                         g.selectAll(".ptext").call(text)
                         g.selectAll(".ctext").call(text2).text(function(d) { return d.key; })
                       
                         
-                        children.selectAll("rect").attr("class","child")
-                        children.selectAll(".children").attr("class","children");
+          
                      
                         
                         grandparent.select("text").text(name(root));
-                        g.selectAll("tspan").text(updateName)
+                        
                         
                         liste_ordonnee.selectAll('li')
                             .data(root._children).enter()
@@ -549,10 +538,9 @@
                         transitioning = true;
                        
                         if(typeof d.parent ==  "undefined")
-                            d3.select("#headListe").text("Répartition par type de médias");
+                            d3.select("#headListe").text("Les propriétaires des médias");
                         else if (typeof d._children[0]._children[0]._children ==  "undefined")
                             d3.select("#headListe").text("Les propriétées de "+d.key);
-                        else  d3.select("#headListe").text("Les propriétaires des médias");
                         
                         var g2 = display(d),
                             t1 = g1.transition().duration(400),
@@ -646,7 +634,7 @@
                                 + d3.format(".2f")(100*d.value/d.parent.value) +"%" :       
 
                             d.parent._children.length-i+". "+d.key+" :  "+d._value+" ~ "
-                                + d3.format(".2f")(d.value)   }
+                                + d3.format(".2f")(100*d.value/d.parent.value)    }
                     
                         }
                                  )
@@ -759,26 +747,26 @@
                 }
                 
                 function text(text) {
-                 /*   text.selectAll("tspan")
-                        .attr("x", function(d) { return x(d.x) + 6; })
-                  */  
                     text.style("opacity",0);
                     text.transition()
                         .duration(600).attr("transform", function(d) {
                         return "translate(" + (x(d.x)+6) + "," + (y(d.y)+5) + ")"; })/*.attr("x", function(d) { return x(d.x) + 6; })
                         .attr("y", function(d) { return y(d.y) + 6; })
                         */.style("opacity", function(d) { 
-                            return (this.getComputedTextLength() < x(d.x + d.dx) - x(d.x)) && 
+                        console.log("leng "+ this.getComputedTextLength()+" x "+x(d.x + d.dx) - x(d.x))
+                        return this.getComputedTextLength() < x(d.x + d.dx) - x(d.x) && 
                         
                                 parseInt(window.getComputedStyle(this).fontSize, 0) < y(d.y + d.dy) - y(d.y) ? 1 : 0; });
                 }
 
                 function text2(text) {
+                    text.style("opacity",0);
                     text.transition()
                         .duration(600).attr("transform", function(d) {
                             return "translate(" + (x(d.x + d.dx) - this.getComputedTextLength() - 6) + "," + (y(d.y + d.dy) - 2) + ")"; })
                     
-                        .style("opacity", function(d) { return this.getComputedTextLength() < x(d.x + d.dx) - x(d.x) && 
+                        .style("opacity",
+                               function(d) { return this.getComputedTextLength() < x(d.x + d.dx) - x(d.x) && 
 
                                 parseInt(window.getComputedStyle(this).fontSize, 0) < y(d.y + d.dy) - y(d.y) ? 1 : 0; });
                 }       
@@ -816,7 +804,7 @@
                 d3.json("file1.json", function(err, res) {
                     if (!err) {
                      //   console.log(res.children);
-                        var data = d3.nest().key(function(d) { return d.type; }).key(function(d) {return d.proprietaire; }).key(function(d) {return d.nomJournal; }).entries(res.children);
+                        var data = d3.nest().key(function(d) {return d.proprietaire; }).key(function(d) {return d.nomJournal; }).entries(res.children);
                         main({title: "Influenceurs des médias"}, {key: "Médias", values: data});
                         
                    
