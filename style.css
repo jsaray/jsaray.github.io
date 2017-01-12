@@ -5,6 +5,10 @@
 html {
 }
 
+#toto{
+	font-weight: 900;
+}
+
 li{
 	font-size: 13px;
 }
@@ -72,7 +76,7 @@ text-align:right;
 	text-align:right;
 	color:#3B4E5D;
 	padding: 0 0 5px 0;
-	
+	font-weight: bold;
 	}
 	
 #preamble p {
@@ -99,7 +103,7 @@ text-align:right;
 #supportingText p {margin:0 0 10px 0; padding:0;}
 
 .p1 {
-	font-size: 13px;
+	font-size: 15px;
 }
 
 #linkList {
@@ -113,7 +117,8 @@ text-align:right;
 	font: bold 12px verdana;
 	color:#3B4E5D;
 	padding: 20px 0 5px 0;
-	}
+	font-weight: bold;
+}
 
 #linkList ul{	
 	list-style-type: none;
