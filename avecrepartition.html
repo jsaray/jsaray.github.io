@@ -186,7 +186,7 @@
            
 
             <div id="sidebar">
-                <button type="checkbox" id="audience" checked >Audience </button>
+                <button type="checkbox" id="audience" checked >Audience (Appuyer pour changer)</button>
 
 
 
@@ -443,8 +443,8 @@
                         .append("title")
                         .text(function(d) {
                         if(critere=="audience")
-                            return d.parent.key +"   :   "+ d.key + " (" + d3.format(".0f")(d.value) + ")";
-                        else  return d.parent.key +"   :   "+ d.key + " (" + d3.format(".0f")(d._value) + ")";
+                            return d.parent.key +"   :   "+ d.key + " (" + d3.format(",.0f")(d.value) + ")";
+                        else  return d.parent.key +"   :   "+ d.key + " (" + d3.format(",.0f")(d._value) + ")";
                     
                     }).style("fill-opacity","1");
                     children.append("text")
@@ -463,9 +463,9 @@
                     d3.select('#audience').on('click', function () {
                         if(critere!="audience"){
                             critere =  'audience' ;
-                            d3.select('#audience').text("Audience") ;
+                            d3.select('#audience').text("Audience (Appuyer pour changer)") ;
                         }else{
-                            d3.select('#audience').text("Nombre Medias"); 
+                            d3.select('#audience').text("Nombre Medias (Appuyer pour changer)"); 
                             critere = 'pourcentage' ; 
                         }
                         
@@ -610,22 +610,22 @@
                             if(critere=="audience")
                             {
                                 var valeur = (d.value/d._value)*100 ;
-                                rate = " détient   (" + d3.format(".2f")(valeur) + "%)" ; 
+                                rate = " détient   (" + d3.format(",.2f")(valeur) + "%)" ; 
                             }
                             else                           
-                                rate = " détient  (" + d3.format(".2f")(100*d.value) + "%)" ; 
+                                rate = " détient  (" + d3.format(",.2f")(100*d.value) + "%)" ; 
 
                         }
                         // console.log("children   "+ d.key+"  "+rate);
 
 
                         if(critere=="audience")
-                            return d.key + " :   "+d3.format(".0f")(d.value) + rate ; 
+                            return d.key + " :   "+d3.format(",.0f")(d.value) + rate ; 
                         else 
                             if(d._children[0]._children==null)
                                 return d.key + " :   "+rate ;
                         else 
-                            return d.key + " :   "+d3.format(".0f")(d._value)  ;
+                            return d.key + " :   "+d3.format(",.0f")(d._value)  ;
                     }
                    
                     function listeStyle(d){
@@ -636,17 +636,17 @@
                             if(d._children[0]._children==null){
                                 var valeur = (d.value/d._value)*100 ;
                                 
-                            return critere == "audience" ?  d.parent._children.length-i+". "+d.key+" :  "+d3.format(".0f")(d.value)+" ~ "
-                                + d3.format(".2f")(valeur) +"%" :       
+                            return critere == "audience" ?  d.parent._children.length-i+". "+d.key+" :  "+d3.format(",.0f")(d.value)+" ~ "
+                                + d3.format(",.2f")(valeur) +"%" :       
                             
                             d.parent._children.length-i+". "+d.key+" :  "+d._value+" ~ "
-                                + d3.format(".2f")(100*d.value) +"%"   
+                                + d3.format(",.2f")(100*d.value) +"%"   
                         }else{
-                            return critere == "audience" ?  d.parent._children.length-i+". "+d.key+" :  "+d3.format(".0f")(d.value)+" ~ "
-                                + d3.format(".2f")(100*d.value/d.parent.value) +"%" :       
+                            return critere == "audience" ?  d.parent._children.length-i+". "+d.key+" :  "+d3.format(",.0f")(d.value)+" ~ "
+                                + d3.format(",.2f")(100*d.value/d.parent.value) +"%" :       
 
                             d.parent._children.length-i+". "+d.key+" :  "+d._value+" ~ "
-                                + d3.format(".2f")(d.value)   }
+                                + d3.format(",.2f")(d.value)   }
                     
                         }
                                  )
@@ -800,13 +800,13 @@
                    
                     if(critere=="audience")
                         return d.parent
-                        ? name(d.parent) + " / " + d.key + " (" +  d3.format(".0f")(d.value) + ")"
-                    : d.key + " (" +  d3.format(".0f")(d.value) + ")";
+                        ? name(d.parent) + " / " + d.key + " (" +  d3.format(",.0f")(d.value) + ")"
+                    : d.key + " (" +  d3.format(",.0f")(d.value) + ")";
                     
                     else 
                         return d.parent
-                            ? name(d.parent) + " / " + d.key + " (" +  d3.format(".0f")(d._value) + ")"
-                        : d.key + " (" +  d3.format(".0f")(d._value) + ")";
+                            ? name(d.parent) + " / " + d.key + " (" +  d3.format(",.0f")(d._value) + ")"
+                        : d.key + " (" +  d3.format(",.0f")(d._value) + ")";
                 }
             }
             

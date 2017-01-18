@@ -29,7 +29,12 @@ h4{
 }
 
 iframe{
-	width: 100%;
+    left: -15% ;
+ width:1050px ;
+    height: 700px;
+    border: none ;
+    position: relative;
+        
 	
 }
 
@@ -50,7 +55,7 @@ a:hover { color: #748CA0; text-decoration:underline; }
 #container {
 	z-index:10;
 	position:relative;
-	width: 75%;
+	width: 85%;
 	height:191px;
 	margin: 0px;
 	padding: 0px;
