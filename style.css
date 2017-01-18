@@ -99,6 +99,18 @@ text-align:right;
 	left:250px;
 	width: 75%;
 }
+
+#supportingText > *{
+    
+    margin-right: 16px;
+    display: block;
+    margin-bottom: 20px;
+    box-shadow: 0px 1px 3px rgba(0,0,0,0.9);
+    margin-left: 20px;
+    padding: 10px;
+    border-top: 3px solid rgba(20,20,200,0.8);
+    
+}
 #supportingText h3 {
 	font: bold 16px verdana;
 	text-align:right;
@@ -113,6 +125,12 @@ text-align:right;
 
 .p1 {
 	font-size: 15px;
+    
+}
+
+#explanation{
+    border: 1px solid green;
+
 }
 
 #linkList {
